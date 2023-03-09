@@ -4,7 +4,7 @@
 #include <array>
 #include <algorithm>
 #include <fstream>
-#include <climits>
+#include <limits>
 #include <ctime>
 #include <omp.h>
 #include <execution>
@@ -56,12 +56,12 @@ valuetype Solve1(const vector<short> &A) {
 valuetype Solve2(vector<short> A) {
     size_t N = A.size();
     
-    //  Удваиваем вектор мусорников
+    //  РЈРґРІР°РёРІР°РµРј РІРµРєС‚РѕСЂ РјСѓСЃРѕСЂРЅРёРєРѕРІ
     A.reserve(2 * N);
     for (size_t i = 0; i < N; i++)
         A.push_back(A[i]);
 
-    //  Строим вектор расстояний
+    //  РЎС‚СЂРѕРёРј РІРµРєС‚РѕСЂ СЂР°СЃСЃС‚РѕСЏРЅРёР№
     vector<valuetype> dist;
     dist.reserve(N);
     size_t center = (N - 1) / 2; //  10 -> 4,  9 -> 4
@@ -71,47 +71,48 @@ valuetype Solve2(vector<short> A) {
         dist.push_back(min(forw, back));
     }
 
-    //  Засекаем время
+    //  Р—Р°СЃРµРєР°РµРј РІСЂРµРјСЏ
     auto start = clock();
 
-    //  Счётчик обработанных элементов - при распараллеливании на счётчик цикла полагаться нельзя
+    //  РЎС‡С‘С‚С‡РёРє РѕР±СЂР°Р±РѕС‚Р°РЅРЅС‹С… СЌР»РµРјРµРЅС‚РѕРІ - РїСЂРё СЂР°СЃРїР°СЂР°Р»Р»РµР»РёРІР°РЅРёРё РЅР° СЃС‡С‘С‚С‡РёРє С†РёРєР»Р° РїРѕР»Р°РіР°С‚СЊСЃСЏ РЅРµР»СЊР·СЏ
     size_t count = 0;
 
-    //  Явно указываем количество потоков по числу логических ядер процессора
+    //  РЇРІРЅРѕ СѓРєР°Р·С‹РІР°РµРј РєРѕР»РёС‡РµСЃС‚РІРѕ РїРѕС‚РѕРєРѕРІ РїРѕ С‡РёСЃР»Сѓ Р»РѕРіРёС‡РµСЃРєРёС… СЏРґРµСЂ РїСЂРѕС†РµСЃСЃРѕСЂР°
     const int threadNum = 12;
     omp_set_num_threads(threadNum);
-    //  Вектор минимумов, чтобы каждый поток обращался к своему минимуму
+    //  Р’РµРєС‚РѕСЂ РјРёРЅРёРјСѓРјРѕРІ, С‡С‚РѕР±С‹ РєР°Р¶РґС‹Р№ РїРѕС‚РѕРє РѕР±СЂР°С‰Р°Р»СЃСЏ Рє СЃРІРѕРµРјСѓ РјРёРЅРёРјСѓРјСѓ
     vector<int64_t> mins(threadNum, numeric_limits<int64_t>::max());
-    // valuetype minCost = numeric_limits<int64_t>::max();
-    //  Параллельный цикл
+    //valuetype minCost = numeric_limits<int64_t>::max();
+    //  РџР°СЂР°Р»Р»РµР»СЊРЅС‹Р№ С†РёРєР»
     #pragma omp parallel for
     for (int i = 0; i < N; i++) {
         int64_t mn = DotProduct(A, dist, i);
 
-        //  Результат вычислений записываем в соответствующий минимум массива
+        //  Р РµР·СѓР»СЊС‚Р°С‚ РІС‹С‡РёСЃР»РµРЅРёР№ Р·Р°РїРёСЃС‹РІР°РµРј РІ СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓСЋС‰РёР№ РјРёРЅРёРјСѓРј РјР°СЃСЃРёРІР°
         const int tnum = omp_get_thread_num();
         if (mn < mins[tnum])
             mins[tnum] = mn;
+        //minCost = min(minCost, mn);
         count++;
 
         if (count % 10000 == 99) {
-            //  Вывод информации один раз на каждые 10000 перемножений векторов
+            //  Р’С‹РІРѕРґ РёРЅС„РѕСЂРјР°С†РёРё РѕРґРёРЅ СЂР°Р· РЅР° РєР°Р¶РґС‹Рµ 10000 РїРµСЂРµРјРЅРѕР¶РµРЅРёР№ РІРµРєС‚РѕСЂРѕРІ
             std::cout << ((double(clock() - start) / CLOCKS_PER_SEC) * N) / (count * 60) << " minutes" << std::endl;
             std::cout << (double(count) / N) * 100 << " %" << endl;
         }
     }
-    //return 3 * minCost;
+    // return 3 * minCost;
     return 3 * *min_element(mins.cbegin(), mins.cend());
 }
 
 valuetype Solve3(vector<short> A) {
-    //  Удваиваем вектор
+    //  РЈРґРІР°РёРІР°РµРј РІРµРєС‚РѕСЂ
     size_t N = A.size();
     A.reserve(2 * N);
     for (size_t i = 0; i < N; i++)
         A.push_back(A[i]);
 
-    //  Строим вектор расстояний
+    //  РЎС‚СЂРѕРёРј РІРµРєС‚РѕСЂ СЂР°СЃСЃС‚РѕСЏРЅРёР№
     vector<int> dist;
     dist.reserve(N);
     size_t center = (N - 1) / 2; //  10 -> 4,  9 -> 4
@@ -121,34 +122,34 @@ valuetype Solve3(vector<short> A) {
         dist.push_back(min(forw, back));
     }
 
-    //  Засекаем время
+    //  Р—Р°СЃРµРєР°РµРј РІСЂРµРјСЏ
     auto start = clock();
 
-    //  Счётчик обработанных элементов - при распараллеливании на счётчик цикла полагаться нельзя
+    //  РЎС‡С‘С‚С‡РёРє РѕР±СЂР°Р±РѕС‚Р°РЅРЅС‹С… СЌР»РµРјРµРЅС‚РѕРІ - РїСЂРё СЂР°СЃРїР°СЂР°Р»Р»РµР»РёРІР°РЅРёРё РЅР° СЃС‡С‘С‚С‡РёРє С†РёРєР»Р° РїРѕР»Р°РіР°С‚СЊСЃСЏ РЅРµР»СЊР·СЏ
     size_t count = 0;
 
-    //  Явно указываем количество потоков по числу логических ядер процессора
+    //  РЇРІРЅРѕ СѓРєР°Р·С‹РІР°РµРј РєРѕР»РёС‡РµСЃС‚РІРѕ РїРѕС‚РѕРєРѕРІ РїРѕ С‡РёСЃР»Сѓ Р»РѕРіРёС‡РµСЃРєРёС… СЏРґРµСЂ РїСЂРѕС†РµСЃСЃРѕСЂР°
     const int threadNum = 12;
     omp_set_num_threads(threadNum);
-    //  Вектор минимумов, чтобы каждый поток обращался к своему минимуму
+    //  Р’РµРєС‚РѕСЂ РјРёРЅРёРјСѓРјРѕРІ, С‡С‚РѕР±С‹ РєР°Р¶РґС‹Р№ РїРѕС‚РѕРє РѕР±СЂР°С‰Р°Р»СЃСЏ Рє СЃРІРѕРµРјСѓ РјРёРЅРёРјСѓРјСѓ
     vector<int64_t> mins(threadNum, numeric_limits<int64_t>::max());
 
-    //  Параллельный цикл
+    //  РџР°СЂР°Р»Р»РµР»СЊРЅС‹Р№ С†РёРєР»
     #pragma omp parallel for
     for (int i = 0; i < N; i++) {
         /*int64_t mn = dot_product(bins, dist, i);
         if (mn < minCost)
             minCost = mn;*/
-            //  Параллельное скалярное произведение
-        int64_t mn = transform_reduce(std::execution::par_unseq, A.cbegin() + i, A.cbegin() + N + i, dist.cbegin(), 0LL);
-        //  Результат вычислений записываем в соответствующий минимум массива
+            //  РџР°СЂР°Р»Р»РµР»СЊРЅРѕРµ СЃРєР°Р»СЏСЂРЅРѕРµ РїСЂРѕРёР·РІРµРґРµРЅРёРµ
+        int64_t mn = transform_reduce(std::execution::par_unseq, dist.cbegin(), dist.cend(), A.cbegin() + i, 0LL);
+        //  Р РµР·СѓР»СЊС‚Р°С‚ РІС‹С‡РёСЃР»РµРЅРёР№ Р·Р°РїРёСЃС‹РІР°РµРј РІ СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓСЋС‰РёР№ РјРёРЅРёРјСѓРј РјР°СЃСЃРёРІР°
         const int tnum = omp_get_thread_num();
         if (mn < mins[tnum])
             mins[tnum] = mn;
         count++;
 
         if (count % 10000 == 99) {
-            //  Вывод информации один раз на каждые 10000 перемножений векторов
+            //  Р’С‹РІРѕРґ РёРЅС„РѕСЂРјР°С†РёРё РѕРґРёРЅ СЂР°Р· РЅР° РєР°Р¶РґС‹Рµ 10000 РїРµСЂРµРјРЅРѕР¶РµРЅРёР№ РІРµРєС‚РѕСЂРѕРІ
             std::cout << ((double(clock() - start) / CLOCKS_PER_SEC) * N) / (count * 60) << " minutes" << std::endl;
             std::cout << (double(count) / N) * 100 << " %" << endl;
         }
@@ -177,3 +178,9 @@ int main()
     std::cin >> x;
     return 0;
 }
+/* Solve1 - 60/25 min
+*  Solve2 (single) - 20 min
+*  Solve2 - 8.2/15 min
+*  Solve2(P) - 3.5 min
+*  Solve3 - 2.5 min
+*/
